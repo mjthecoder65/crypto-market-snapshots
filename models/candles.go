@@ -1,5 +1,11 @@
 package models
 
+import (
+	"log"
+
+	"gorm.io/gorm"
+)
+
 type Candle struct {
 	ID        uint    `db:"id" json:"id" gorm:"primary_key"`
 	Symbol    string  `db:"symbol" json:"symbol"`
@@ -11,4 +17,48 @@ type Candle struct {
 	High      float64 `db:"high" json:"high"`
 	Low       float64 `db:"low" json:"low"`
 	Volume    float64 `db:"volume" json:"volume"`
+}
+
+func (candle *Candle) Save(db *gorm.DB) {
+	result := db.Create(candle)
+
+	if result.Error != nil {
+		log.Fatalf("failed to save candle: %v\n", result.Error)
+	} else {
+		log.Printf("success: added candle: %+v\n", candle)
+	}
+}
+
+func (candle *Candle) AddOrUpdate(db *gorm.DB) {
+	var existingCandle Candle
+
+	result := db.Where("symbol = ? AND interval = ? AND open_time = ? AND close_time = ?",
+		candle.Symbol, candle.Interval, candle.OpenTime, candle.CloseTime).
+		First(&existingCandle)
+
+	if result.Error != nil && result.Error != gorm.ErrRecordNotFound {
+		log.Printf("Error Checking for existing candles: %v", result.Error)
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		if err := db.Create(&candle).Error; err != nil {
+			log.Printf("failed to create new candle: %v", err)
+		} else {
+			log.Println("New candle added.")
+		}
+	} else {
+		existingCandle.Open = candle.Open
+		existingCandle.High = candle.High
+		existingCandle.Low = candle.Low
+		existingCandle.Close = candle.Close
+		existingCandle.Volume = candle.Volume
+		existingCandle.CloseTime = candle.CloseTime
+
+		if err := db.Save(&existingCandle).Error; err != nil {
+			log.Printf("Error updating candle: %v", err)
+		} else {
+			log.Println("Candle has been updated.")
+		}
+	}
 }
