@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: workers
+    restart: on-failure
+    volumes:
+      - .:/app
+    env_file: .env  
+    networks:
+      - crypto-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "5"
+        
+networks:
+  crypto-network:
+    external: true
