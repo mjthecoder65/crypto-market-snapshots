@@ -1,1 +1,1 @@
-# crypto-market-snapshots
+# Crypto-Market-Snapshots
