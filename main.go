@@ -14,28 +14,30 @@ import (
 func main() {
 	var wg sync.WaitGroup
 
-	candleChannel := make(chan models.Candle, config.CANDLE_CHANNEL_BUFFER_COUNT)
-	orderBookChannel := make(chan models.OrderBook, config.ORDER_BOOK_CHANNEL_BUFFER_COUNT)
+	candleJobs := make(chan models.Candle, config.CANDLE_CHANNEL_BUFFER_COUNT)
 
 	db, err := db.Connect(config.Settings.DatabaseDSN)
 
 	if err != nil {
 		panic("Failed to connect to the database")
 	} else {
-		log.Printf("connected to the databaser...")
+		log.Printf("connected to the database...")
 	}
 
 	// Create candle table if not exist.
 	db.AutoMigrate(&models.Candle{})
 
 	// Start candle workers
-	workers.StartCandleWorkers(db, candleChannel, &wg)
-
-	// Start order book workers (example with 1 worker, adjust as needed)
-	workers.StartOrderBookWorkers(db, orderBookChannel, &wg)
+	workers.StartCandleWorkers(db, candleJobs, &wg)
 
 	// Fetching candles every two minutes
-	go fetchers.FetchCandleEveryTwoMinutes("BTCUSDT", "1m", 1000, candleChannel)
+	var (
+		symbol   = "BTCUSDT"
+		interval = "1m"
+		limit    = 1000
+	)
+
+	go fetchers.StartCandleJob(symbol, interval, limit, candleJobs)
 
 	// Wait for all workers to finish
 	wg.Wait()
