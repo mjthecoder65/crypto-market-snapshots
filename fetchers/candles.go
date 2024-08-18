@@ -40,6 +40,7 @@ func FetchCandles(symbol string, interval string, limit int) ([]models.Candle, e
 			Low:       low,
 			Volume:    volume,
 		}
+
 		candles = append(candles, candle)
 	}
 
@@ -59,7 +60,7 @@ func StartCandleJob(symbol string, interval string, limit int, candleChannel cha
 		candles, err := FetchCandles(symbol, interval, limit)
 
 		if err != nil {
-			log.Printf("failed to fetch candle with params(symbol: %s interval: %s limit: %d)", symbol, interval, limit)
+			log.Println(err)
 			continue
 		}
 
