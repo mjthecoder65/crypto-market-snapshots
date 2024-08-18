@@ -3,6 +3,7 @@ package models
 import (
 	"log"
 
+	"github.com/mjthecoder65/crypto-market-snapshots/common"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +26,7 @@ func (candle *Candle) Save(db *gorm.DB) {
 	if result.Error != nil {
 		log.Fatalf("failed to save candle: %v\n", result.Error)
 	} else {
-		log.Printf("success: added candle: %+v\n", candle)
+		log.Printf("%s success: added candle: %+v %s\n", common.Yellow, candle, common.Reset)
 	}
 }
 
