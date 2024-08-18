@@ -1,0 +1,6 @@
+package config
+
+const (
+	CANDLE_CHANNEL_BUFFER_COUNT     int = 1000
+	ORDER_BOOK_CHANNEL_BUFFER_COUNT int = 1000
+)
