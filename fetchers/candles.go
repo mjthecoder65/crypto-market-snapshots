@@ -9,10 +9,20 @@ import (
 	"time"
 
 	"github.com/mjthecoder65/crypto-market-snapshots/models"
+	"gorm.io/gorm"
 )
 
-func FetchCandles(symbol string, interval string, limit int) ([]models.Candle, error) {
-	klineService := client.NewKlinesService().Symbol(symbol).Interval(interval).Limit(limit)
+func FetchCandles(symbol string, interval string, limit int, db *gorm.DB) ([]models.Candle, error) {
+	latestCandle, err := models.GetLatestCandle(symbol, interval, db)
+
+	startTime := time.Now().Add(-1 * time.Hour)
+
+	if err != nil {
+		startTime = latestCandle.OpenTime
+	}
+
+	klineService := client.NewKlinesService().Symbol(symbol).Interval(interval).StartTime(
+		startTime.UnixNano() / int64(time.Millisecond)).Limit(limit)
 	klines, err := klineService.Do(context.Background())
 
 	if err != nil {
@@ -32,8 +42,8 @@ func FetchCandles(symbol string, interval string, limit int) ([]models.Candle, e
 		candle := models.Candle{
 			Symbol:    symbol,
 			Interval:  interval,
-			OpenTime:  kline.OpenTime,
-			CloseTime: kline.CloseTime,
+			OpenTime:  time.Unix(0, kline.OpenTime*int64(time.Millisecond)),
+			CloseTime: time.Unix(0, kline.CloseTime*int64(time.Millisecond)),
 			Open:      open,
 			Close:     close,
 			High:      high,
@@ -52,12 +62,12 @@ func SendCandleMessage(candle models.Candle, sender chan<- models.Candle) {
 	log.Printf("Sent candle: %v", candle)
 }
 
-func StartCandleJob(symbol string, interval string, limit int, candleChannel chan models.Candle) {
+func StartCandleJob(symbol string, interval string, limit int, candleChannel chan models.Candle, db *gorm.DB) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		candles, err := FetchCandles(symbol, interval, limit)
+		candles, err := FetchCandles(symbol, interval, limit, db)
 
 		if err != nil {
 			log.Println(err)
