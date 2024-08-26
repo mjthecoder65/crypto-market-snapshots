@@ -37,8 +37,8 @@ func main() {
 		limit    = 1000
 	)
 
-	go fetchers.StartCandleJob(symbol, interval, limit, candleJobs)
+	go fetchers.StartCandleJob(symbol, interval, limit, candleJobs, db)
 
-	// Wait for all workers to finish
+	// Wait for all workers to finish until the end.
 	wg.Wait()
 }
